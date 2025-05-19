@@ -46,10 +46,10 @@ public class YouTubeTest {
 
         // 5. Кликнуть по второму элементу в списке результатов поиска
         searchResultsPage.clickSecondSearchResult();
+
+        // 6. На странице видео кликнуть по четвёртому видео из списка видео
         videoPage.clickVideosTab();
         videoPage.clickFourthVideoFromSearchResults();
-
-        // 6. На странице видео кликнуть по четвёртому видео из списка видео (плейлист/рекомендации)
         LOGGER.info("Видео найдено");
 
         // 7. Кликнуть на аватар отправителя видео
