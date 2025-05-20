@@ -8,6 +8,8 @@ import org.testng.annotations.*;
 import pages.YouTubeHomePage;
 import pages.YouTubeSearchResultsPage;
 import pages.YouTubeVideoPage;
+
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.Random;
 
@@ -48,19 +50,18 @@ public class YouTubeTest {
         searchResultsPage.clickSecondSearchResult();
 
         // 6. На странице видео кликнуть по четвёртому видео из списка видео
-        videoPage.clickVideosTab();
         videoPage.clickFourthVideoFromSearchResults();
-        LOGGER.info("Видео найдено");
 
         // 7. Кликнуть на аватар отправителя видео
-        videoPage.waitForChannelAvatar();
         videoPage.clickChannelAvatar();
 
         // 8. Кликнуть на кнопку “ПОДПИСАТЬСЯ”
         videoPage.clickSubscribeButton();
+        videoPage.closeAllExceptYouTubeTab();
 
         // 9. Проверить, что текст “ВОЙТИ“ отображается
         videoPage.checkSignInButtonPresence();
+        LOGGER.info("Тест успешно пройден");
     }
 
     private String generateRandomDigits(int length) {
@@ -75,7 +76,17 @@ public class YouTubeTest {
     @AfterClass
     public void tearDown() {
         if (driver != null) {
-            driver.close(); // Закрытие браузера после выполнения всех тестов
+            try {
+                Set<String> windowHandles = driver.getWindowHandles();
+                for (String handle : windowHandles) {
+                    driver.switchTo().window(handle);
+                    driver.close();
+                }
+            } catch (Exception e) {
+                System.out.println("Ошибка при закрытии окон: " + e.getMessage());
+            } finally {
+                driver.quit(); // На всякий случай завершить сессию
+            }
         }
     }
 }
