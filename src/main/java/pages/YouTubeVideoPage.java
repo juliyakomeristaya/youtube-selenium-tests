@@ -1,12 +1,10 @@
 package pages;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -25,15 +23,22 @@ public class YouTubeVideoPage {
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(30));
     }
 
+
     public void clickFourthVideoFromSearchResults() {
         LOGGER.info("Ожидаем список видео и кликаем по четвёртому видео из результатов поиска");
         try {
-            LOGGER.info("Ожидаем, пока видео станет кликабельным");
-            WebElement fourthVideo = wait.until(ExpectedConditions.elementToBeClickable(fourthVideoLocator));
+            List<WebElement> videos = driver.findElements(By.xpath("//ytd-video-renderer//a[@id='thumbnail']"));
+            if (videos.size() < 4) {
+                String message = "Недостаточно видео в результатах поиска. Найдено: " + videos.size();
+                LOGGER.severe(message);
+                throw new RuntimeException(message);
+            }
+
+            WebElement fourthVideo = videos.get(3);
 
             LOGGER.info("Прокручиваем страницу, чтобы элемент был видим");
-            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", fourthVideo);
-            wait.until(ExpectedConditions.visibilityOf(fourthVideo));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", fourthVideo);
+            Thread.sleep(1000);
 
             LOGGER.info("Кликаем по элементу через JavaScript");
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", fourthVideo);
@@ -46,28 +51,62 @@ public class YouTubeVideoPage {
     }
 
     public void clickChannelAvatar() {
-        LOGGER.info("Пытаемся кликнуть на аватар (с учётом Shorts)");
+        LOGGER.info("Пытаемся кликнуть на аватар канала");
+
         try {
+            // Переключаемся на актуальную вкладку YouTube
+            for (String handle : driver.getWindowHandles()) {
+                driver.switchTo().window(handle);
+                if (driver.getCurrentUrl().contains("youtube.com")) break;
+            }
+
             String url = driver.getCurrentUrl();
+            LOGGER.info("Текущий URL: " + url);
+
             By avatarLocator;
 
             if (url.contains("/shorts/")) {
-                LOGGER.info("Shorts: ищем аватар с кнопкой");
+                LOGGER.info("Shorts: ищем avatar-кнопку");
                 avatarLocator = By.xpath("//yt-reel-channel-bar-view-model//div[@role='button' and contains(@class,'yt-spec-avatar-shape__button')]");
+            } else if (url.contains("/@")) {
+                LOGGER.warning("Уже на канале, аватара может не быть. Пропускаем клик.");
+                return;
             } else {
-                LOGGER.info("Обычное видео: ссылка на канал");
+                LOGGER.info("Обычное видео: ищем ссылку на канал по href='/@'");
                 avatarLocator = By.xpath("//ytd-video-owner-renderer//a[contains(@href, '/@')]");
             }
-            WebElement avatar = wait.until(ExpectedConditions.presenceOfElementLocated(avatarLocator));
+
+            // Ожидаем появления элемента с увеличенным таймаутом
+            WebDriverWait extendedWait = new WebDriverWait(driver, Duration.ofSeconds(30));
+            WebElement avatar = extendedWait.until(ExpectedConditions.presenceOfElementLocated(avatarLocator));
+
+            // Прокрутка и безопасный клик
             ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", avatar);
-            wait.until(ExpectedConditions.elementToBeClickable(avatar));
+            extendedWait.until(ExpectedConditions.elementToBeClickable(avatar));
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", avatar);
+
             LOGGER.info("Клик по аватару выполнен");
-        } catch (Exception e) {
-            LOGGER.severe("Ошибка при клике на аватар: " + e.getMessage());
+
+        } catch (TimeoutException | NoSuchElementException e) {
+            LOGGER.severe("Аватар не найден или перекрыт: " + e.getMessage());
+
+            // Попробуем закрыть рекламу/оверлей, если он мешает
+            try {
+                LOGGER.warning("🔍 Ищем перекрывающие элементы (например, реклама)");
+                WebElement closeButton = driver.findElement(By.xpath("//button[@aria-label='Закрыть' or @aria-label='Close']"));
+                if (closeButton.isDisplayed()) {
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", closeButton);
+                    LOGGER.info("Перекрывающий элемент закрыт. Повторяем попытку.");
+                    clickChannelAvatar(); // Рекурсивный вызов
+                }
+            } catch (Exception ex) {
+                LOGGER.warning("Не удалось закрыть всплывающий элемент: " + ex.getMessage());
+            }
+
             throw new RuntimeException("Клик по аватару не удался", e);
         }
     }
+
 
     public void clickSubscribeButton() {
         LOGGER.info("Пытаемся кликнуть на кнопку 'ПОДПИСАТЬСЯ'");

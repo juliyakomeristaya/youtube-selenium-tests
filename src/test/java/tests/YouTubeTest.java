@@ -31,7 +31,7 @@ public class YouTubeTest {
     }
 
     @Test
-    public void testUserFlow() {
+    public void testUserFlow() throws InterruptedException {
         // 1. Открыть YouTube
         homePage.open();
         LOGGER.info("Тест начался");
@@ -48,9 +48,11 @@ public class YouTubeTest {
 
         // 5. Кликнуть по второму элементу в списке результатов поиска
         searchResultsPage.clickSecondSearchResult();
+        Thread.sleep(10000);
 
         // 6. На странице видео кликнуть по четвёртому видео из списка видео
         videoPage.clickFourthVideoFromSearchResults();
+        Thread.sleep(10000);
 
         // 7. Кликнуть на аватар отправителя видео
         videoPage.clickChannelAvatar();
@@ -85,7 +87,7 @@ public class YouTubeTest {
             } catch (Exception e) {
                 System.out.println("Ошибка при закрытии окон: " + e.getMessage());
             } finally {
-                driver.quit(); // На всякий случай завершить сессию
+                driver.quit();
             }
         }
     }
