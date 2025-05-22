@@ -48,11 +48,9 @@ public class YouTubeTest {
 
         // 5. Кликнуть по второму элементу в списке результатов поиска
         searchResultsPage.clickSecondSearchResult();
-        Thread.sleep(10000);
 
         // 6. На странице видео кликнуть по четвёртому видео из списка видео
         videoPage.clickFourthVideoFromSearchResults();
-        Thread.sleep(10000);
 
         // 7. Кликнуть на аватар отправителя видео
         videoPage.clickChannelAvatar();
